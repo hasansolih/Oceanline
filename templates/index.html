@@ -1,0 +1,125 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Modern HERO with quick search -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(rgba(10, 102, 196, 0.85), rgba(10, 102, 196, 0.85)), url('https://images.unsplash.com/photo-1605281317010-fe5ffe798166?auto=format&fit=crop&w=1920&q=80') center/cover; min-height: 500px;">
+    <div class="container py-5 text-white">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-5 fw-bold animate-slide-left">OceanLine Ferry Service</h1>
+                <p class="lead mb-4 animate-slide-left animate-delay-1">Fast, reliable and comfortable ferry connections across the Maldives. Book online in minutes.</p>
+                <div class="d-flex gap-2 animate-slide-left animate-delay-2">
+                    <a href="{{ url_for('book') }}" class="btn btn-light btn-lg">Book Now</a>
+                    <a href="{{ url_for('available_seats') }}" class="btn btn-outline-light btn-lg">All Schedules</a>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow-lg p-3 animate-slide-right animate-delay-2" style="background: rgba(255,255,255,0.95); position: relative; z-index: 10;">
+                    <form action="{{ url_for('book') }}" method="get" class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">From</label>
+                            <select name="departure" class="form-select" required>
+                                <option value="">Select departure</option>
+                                {% for p in ports %}
+                                    <option value="{{ p }}">{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">To</label>
+                            <select name="destination" class="form-select" required>
+                                <option value="">Select destination</option>
+                                {% for p in ports %}
+                                    <option value="{{ p }}">{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Date</label>
+                              <input type="date" name="date" class="form-control" value="{{ today.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Search Times & Book</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <svg class="position-absolute" style="right:0;bottom:0;opacity:0.15; z-index: 1; pointer-events: none;" width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#ffffff"/>
+    </svg>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card p-4 h-100 shadow-sm animate-slide-up animate-delay-1">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="display-6 text-primary"><i class="bi bi-speedometer2"></i></div>
+                        <div>
+                            <h5 class="mb-1">On-Time Departures</h5>
+                            <p class="mb-0 text-muted">We keep to schedules so you arrive when expected.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 h-100 shadow-sm animate-slide-up animate-delay-2">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="display-6 text-success"><i class="bi bi-people"></i></div>
+                        <div>
+                            <h5 class="mb-1">Comfortable Rides</h5>
+                            <p class="mb-0 text-muted">Spacious seating and friendly crew on every trip.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4 h-100 shadow-sm animate-slide-up animate-delay-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="display-6 text-warning"><i class="bi bi-cash-stack"></i></div>
+                        <div>
+                            <h5 class="mb-1">Transparent Pricing</h5>
+                            <p class="mb-0 text-muted">Clear fares and no hidden fees — pay online or on board.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Routes preview -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-3 animate-fade-in animate-delay-3">
+            <h4 class="mb-0">Popular Routes</h4>
+            <a href="{{ url_for('available_seats') }}" class="small">View all schedules</a>
+        </div>
+        <div class="row g-3">
+            {% for route, price in (ROUTE_PRICES.items()|list)[:6] %}
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm p-3">
+                        <div class="d-flex justify-content-between">
+                            <div>{{ route[0] }} → {{ route[1] }}</div>
+                            <div class="fw-bold">{{ price }} MVR</div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<style>
+    .card { border-radius: 12px; }
+    section.position-relative { border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+</style>
+
+{% endblock %}

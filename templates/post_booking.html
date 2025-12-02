@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card">
+        <div class="card-body">
+          <h4>Booking Created</h4>
+          <p class="text-muted">Reference: <strong>{{ booking.booking_reference }}</strong></p>
+
+          <h6>Passenger</h6>
+          <p>{{ booking.name }} &middot; {{ booking.email }}</p>
+
+          <h6>Journey</h6>
+          <p>{{ booking.departure }} → {{ booking.destination }}<br>{{ booking.date.strftime('%Y-%m-%d') }} at {{ booking.time }}</p>
+
+          <h6>Amount</h6>
+          <p><strong>{{ booking.total_price }} MVR</strong></p>
+
+          <div class="mt-4">
+            <p class="small text-muted">Choose one of the payment options below, or continue to select seats and finalize booking.</p>
+
+            <div class="d-flex gap-2 flex-column flex-sm-row">
+              <a class="btn btn-outline-primary flex-fill" href="https://www.paypal.com/checkoutnow" target="_blank">Pay with PayPal</a>
+              <a class="btn btn-outline-secondary flex-fill" href="{{ url_for('create_checkout_session', ref=booking.booking_reference) }}">Pay with Stripe</a>
+              <form method="GET" action="{{ url_for('select_seats') }}" style="display:inline;">
+                <button type="submit" class="btn btn-success flex-fill">Continue to Seat Selection</button>
+              </form>
+            </div>
+
+            <div class="mt-3">
+              {% if booking.payment_status == 'pending' and booking.payment_info %}
+                <p class="small">We received your bank slip: <a href="{{ url_for('uploaded_file', filename=booking.payment_info) }}">Download Slip</a></p>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,98 @@
+<!-- templates/available_seats.html -->
+{% extends "base.html" %}
+
+{% block title %}All Schedules - OceanLine{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>All Schedules</h3>
+            <p class="text-muted">View date-specific departures and recurring schedule times.</p>
+        </div>
+    </div>
+
+    <!-- Date-specific schedules -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <strong>Date-specific Schedules</strong>
+                </div>
+                <div class="card-body">
+                    {% if daily_schedules %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Departure</th>
+                                        <th>Destination</th>
+                                        <th>Time</th>
+                                        <th>Available Seats</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in daily_schedules %}
+                                        <tr>
+                                            <td>{{ s.date.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ s.departure }}</td>
+                                            <td>{{ s.destination }}</td>
+                                            <td>{{ s.time }}</td>
+                                            <td>
+                                                {% if s.available_seats == 0 %}
+                                                    <span class="badge bg-danger">0</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">{{ s.available_seats }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a class="btn btn-sm btn-primary" href="{{ url_for('book') }}?departure={{ s.departure }}&destination={{ s.destination }}&date={{ s.date.strftime('%Y-%m-%d') }}&time={{ s.time }}">Book</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">No date-specific schedules available.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring schedules -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <strong>Recurring Schedules</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for route, times in recurring.items() %}
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded h-100">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <div><strong>{{ route[0] }} → {{ route[1] }}</strong></div>
+                                        <div class="text-muted small">{{ times|length }} times</div>
+                                    </div>
+                                    <div>
+                                        {% for t in times %}
+                                            <span class="badge bg-light text-dark me-1 mb-1">{{ t }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

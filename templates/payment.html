@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Payment - OceanLine{% endblock %}
+
+{% block content %}
+<style>
+    .payment-container { max-width: 800px; margin: 40px auto; }
+    .payment-card { border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; }
+    .payment-header { background: linear-gradient(90deg,#0A64C4,#0457A0); color: #fff; padding: 24px; border-radius: 12px 12px 0 0; }
+    .booking-summary { background: #f8f9fb; padding: 20px; border-radius: 8px; margin-bottom: 24px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e0e0e0; }
+    .summary-row:last-child { border-bottom: none; font-weight: 700; font-size: 1.1rem; }
+    .payment-method-card { border: 2px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; }
+    .payment-method-card:hover { border-color: #0A64C4; background: #f8fbff; }
+    .payment-method-card.active { border-color: #0A64C4; background: #e8f1ff; }
+    .payment-method-card input[type="radio"] { margin-right: 12px; }
+    .payment-details { display: none; margin-top: 16px; padding: 16px; background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .payment-details.active { display: block; }
+    .seat-badge { display: inline-block; background: #e8f1ff; color: #0A64C4; padding: 4px 8px; border-radius: 4px; margin: 2px; font-weight: 700; }
+</style>
+
+<div class="container payment-container">
+    <div class="card payment-card">
+        <div class="payment-header text-center">
+            <h4 class="mb-0">Complete Your Payment</h4>
+            <p class="mb-0 mt-2 opacity-75">Booking Reference: {{ booking.booking_reference }}</p>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="booking-summary">
+                <h5 class="mb-3">Booking Summary</h5>
+                <div class="summary-row">
+                    <span>Route:</span>
+                    <span><strong>{{ booking.departure }} → {{ booking.destination }}</strong></span>
+                </div>
+                <div class="summary-row">
+                    <span>Date & Time:</span>
+                    <span><strong>{{ booking.date.strftime('%B %d, %Y') }} at {{ booking.time }}</strong></span>
+                </div>
+                <div class="summary-row">
+                    <span>Passengers:</span>
+                    <span><strong>{{ booking.seats }}</strong></span>
+                </div>
+                <div class="summary-row">
+                    <span>Selected Seats:</span>
+                    <span>
+                        {% if booking.selected_seats %}
+                            {% for s in booking.selected_seats.split(',') %}
+                                <span class="seat-badge">{{ s.strip() }}</span>
+                            {% endfor %}
+                        {% else %}—{% endif %}
+                    </span>
+                </div>
+                {% if booking.is_roundtrip %}
+                <div class="summary-row">
+                    <span>Return Date & Time:</span>
+                    <span><strong>{{ booking.return_date.strftime('%B %d, %Y') }} at {{ booking.return_time }}</strong></span>
+                </div>
+                <div class="summary-row">
+                    <span>Return Seats:</span>
+                    <span>
+                        {% if booking.return_selected_seats %}
+                            {% for s in booking.return_selected_seats.split(',') %}
+                                <span class="seat-badge">{{ s.strip() }}</span>
+                            {% endfor %}
+                        {% else %}—{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                <div class="summary-row">
+                    <span>Total Amount:</span>
+                    <span><strong>MVR {{ booking.total_price }}</strong></span>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('payment', ref=booking.booking_reference) }}" enctype="multipart/form-data" id="payment-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <h5 class="mb-3">Select Payment Method</h5>
+
+                <div class="payment-method-card" onclick="selectPayment('bank')">
+                    <label class="d-flex align-items-center mb-0">
+                        <input type="radio" name="payment_method" value="Bank Transfer" id="bank-transfer" required>
+                        <div>
+                            <strong>Bank Transfer</strong>
+                            <p class="mb-0 text-muted small">Upload your bank transfer slip</p>
+                        </div>
+                    </label>
+                </div>
+                <div class="payment-details" id="bank-details">
+                    <label class="form-label">Upload Bank Transfer Slip</label>
+                    <input type="file" name="bank_slip" id="bank_slip" class="form-control" accept="image/*,.pdf">
+                    <div class="text-muted small mt-2">Upload a photo or PDF of your bank transfer slip</div>
+                </div>
+
+                <div class="payment-method-card" onclick="selectPayment('card')">
+                    <label class="d-flex align-items-center mb-0">
+                        <input type="radio" name="payment_method" value="Card" id="card" required>
+                        <div>
+                            <strong>Credit/Debit Card</strong>
+                            <p class="mb-0 text-muted small">Pay securely with your card (Dev mode)</p>
+                        </div>
+                    </label>
+                </div>
+                <div class="payment-details" id="card-details">
+                    <div class="row">
+                        <div class="col-md-7 mb-2">
+                            <label class="form-label">Card Number</label>
+                            <input type="text" class="form-control" name="card_number" id="card_number" placeholder="4242 4242 4242 4242">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label">Expiry</label>
+                            <input type="text" class="form-control" name="card_expiry" id="card_expiry" placeholder="MM/YY">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label class="form-label">CVC</label>
+                            <input type="text" class="form-control" name="card_cvc" id="card_cvc" placeholder="CVC">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-method-card" onclick="selectPayment('stripe')">
+                    <label class="d-flex align-items-center mb-0">
+                        <input type="radio" name="payment_method" value="Stripe" id="stripe" required>
+                        <div>
+                            <strong>Stripe Checkout</strong>
+                            <p class="mb-0 text-muted small">Secure payment via Stripe</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="payment-method-card" onclick="selectPayment('paypal')">
+                    <label class="d-flex align-items-center mb-0">
+                        <input type="radio" name="payment_method" value="PayPal" id="paypal" required>
+                        <div>
+                            <strong>PayPal</strong>
+                            <p class="mb-0 text-muted small">Pay with your PayPal account</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Complete Payment</button>
+                    <a href="{{ url_for('select_seats') }}" class="btn btn-outline-secondary">Back to Seat Selection</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectPayment(method) {
+    // Remove active class from all cards
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Hide all payment details
+    document.querySelectorAll('.payment-details').forEach(detail => {
+        detail.classList.remove('active');
+    });
+    
+    // Activate selected method
+    if (method === 'bank') {
+        document.getElementById('bank-transfer').checked = true;
+        document.querySelector('[onclick="selectPayment(\'bank\')"]').classList.add('active');
+        document.getElementById('bank-details').classList.add('active');
+    } else if (method === 'card') {
+        document.getElementById('card').checked = true;
+        document.querySelector('[onclick="selectPayment(\'card\')"]').classList.add('active');
+        document.getElementById('card-details').classList.add('active');
+    } else if (method === 'stripe') {
+        document.getElementById('stripe').checked = true;
+        document.querySelector('[onclick="selectPayment(\'stripe\')"]').classList.add('active');
+    } else if (method === 'paypal') {
+        document.getElementById('paypal').checked = true;
+        document.querySelector('[onclick="selectPayment(\'paypal\')"]').classList.add('active');
+    }
+}
+
+// Form validation
+document.getElementById('payment-form').addEventListener('submit', function(e) {
+    const method = document.querySelector('input[name="payment_method"]:checked');
+    
+    if (!method) {
+        e.preventDefault();
+        alert('Please select a payment method');
+        return false;
+    }
+    
+    // Validate bank transfer slip upload
+    if (method.value === 'Bank Transfer') {
+        const slip = document.getElementById('bank_slip').value;
+        if (!slip) {
+            e.preventDefault();
+            alert('Please upload your bank transfer slip');
+            return false;
+        }
+    }
+});
+</script>
+
+{% endblock %}

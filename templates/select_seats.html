@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .seat-container {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        margin: 20px 0;
+    }
+    .seat {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background-color: #fff;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .seat.available:hover {
+        background-color: #e7f3ff;
+        transform: scale(1.1);
+    }
+    .seat.taken {
+        background-color: #dc3545;
+        color: white;
+        cursor: not-allowed;
+        border-color: #dc3545;
+    }
+    .seat.selected {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .seat-group {
+        margin-bottom: 30px;
+    }
+    .section-title {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #eee;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-ticket-perforated"></i> Select Your Seats</h4>
+                    <small>Route: {{ departure }} → {{ destination }} | Date: {{ date }} | Time: {{ time }}</small>
+                </div>
+                
+                <div class="card-body">
+                    {% if is_roundtrip %}
+                    <div class="alert alert-info">
+                        <strong>Round Trip:</strong> You need to select {{ seats_needed }} seats for both outbound and return trips.
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('select_seats') }}">
+
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <!-- Outbound Seats -->
+                        <div class="seat-group">
+                            <h5 class="section-title">Outbound Trip Seats ({{ seats_needed }} needed)</h5>
+                            <div class="seat-container">
+                                {% for i in range(1, 36) %}
+                                    {% set seat_taken = i in taken_seats %}
+                                    <div class="seat {% if seat_taken %}taken{% else %}available{% endif %}" 
+                                         data-seat="{{ i }}" 
+                                         {% if seat_taken %}title="Taken"{% else %}title="Seat {{ i }}"{% endif %}>
+                                        {% if seat_taken %}X{% else %}{{ i }}{% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Return Seats if round trip -->
+                        {% if is_roundtrip %}
+                        <div class="seat-group">
+                            <h5 class="section-title">Return Trip Seats ({{ seats_needed }} needed)</h5>
+                            <div class="seat-container">
+                                {% for i in range(1, 36) %}
+                                    {% set return_seat_taken = i in return_taken_seats %}
+                                    <div class="seat {% if return_seat_taken %}taken{% else %}available{% endif %}" 
+                                         data-return-seat="{{ i }}" 
+                                         {% if return_seat_taken %}title="Taken"{% else %}title="Seat {{ i }}"{% endif %}>
+                                        {% if return_seat_taken %}X{% else %}{{ i }}{% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Selected Seats Display -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <label>Selected Outbound Seats:</label>
+                                <div id="selected-outbound-seats" class="form-control" style="height: auto; min-height: 40px;">
+                                    <span class="text-muted">None selected</span>
+                                </div>
+                                <input type="hidden" id="selected-seats-input" name="seats">
+                            </div>
+                            
+                            {% if is_roundtrip %}
+                            <div class="col-md-6">
+                                <label>Selected Return Seats:</label>
+                                <div id="selected-return-seats" class="form-control" style="height: auto; min-height: 40px;">
+                                    <span class="text-muted">None selected</span>
+                                </div>
+                                <input type="hidden" id="selected-return-seats-input" name="return_seats">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100 mt-4">
+                            <i class="bi bi-check-circle"></i> Confirm Seats & Complete Booking
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function(){
+    let selectedOutboundSeats = [];
+    let selectedReturnSeats = [];
+    // Convert to integer since seats_needed is passed as string from template
+    const seatsNeeded = parseInt('{{ seats_needed }}', 10);
+
+    // Handle outbound seat selection
+    $('.seat[data-seat]').click(function(){
+        if ($(this).hasClass('taken')) return;
+        
+        const seatNum = parseInt($(this).data('seat'), 10);
+        const index = selectedOutboundSeats.indexOf(seatNum);
+        
+        if (index > -1) {
+            // Deselect
+            selectedOutboundSeats.splice(index, 1);
+            $(this).removeClass('selected');
+        } else {
+            // Select if we haven't reached the limit
+            if (selectedOutboundSeats.length < seatsNeeded) {
+                selectedOutboundSeats.push(seatNum);
+                $(this).addClass('selected');
+            }
+        }
+        
+        updateSeatDisplay(selectedOutboundSeats, '#selected-outbound-seats', '#selected-seats-input');
+    });
+
+    // Handle return seat selection
+    $('.seat[data-return-seat]').click(function(){
+        if ($(this).hasClass('taken')) return;
+        
+        const seatNum = parseInt($(this).data('return-seat'), 10);
+        const index = selectedReturnSeats.indexOf(seatNum);
+        
+        if (index > -1) {
+            // Deselect
+            selectedReturnSeats.splice(index, 1);
+            $(this).removeClass('selected');
+        } else {
+            // Select if we haven't reached the limit
+            if (selectedReturnSeats.length < seatsNeeded) {
+                selectedReturnSeats.push(seatNum);
+                $(this).addClass('selected');
+            }
+        }
+        
+        updateSeatDisplay(selectedReturnSeats, '#selected-return-seats', '#selected-return-seats-input');
+    });
+
+    function updateSeatDisplay(selectedSeats, displaySelector, inputSelector) {
+        const display = $(displaySelector);
+        const input = $(inputSelector);
+        
+        if (selectedSeats.length === 0) {
+            display.html('<span class="text-muted">None selected</span>');
+        } else {
+            display.html('<span class="badge bg-primary me-1">' + selectedSeats.join('</span><span class="badge bg-primary me-1">') + '</span>');
+        }
+        
+        input.val(selectedSeats.join(','));
+        
+        // Check if we have enough seats selected
+        if (selectedSeats.length === seatsNeeded) {
+            display.parent().removeClass('border-danger');
+        } else {
+            display.parent().addClass('border-danger');
+        }
+    }
+
+    // Validate before submitting
+    $('form').submit(function(e){
+        if (selectedOutboundSeats.length !== seatsNeeded) {
+            e.preventDefault();
+            alert('Please select exactly ' + seatsNeeded + ' outbound seat(s).');
+            return false;
+        }
+        
+        {% if is_roundtrip %}
+        if (selectedReturnSeats.length !== seatsNeeded) {
+            e.preventDefault();
+            alert('Please select exactly ' + seatsNeeded + ' return seat(s).');
+            return false;
+        }
+        {% endif %}
+    });
+});
+</script>
+{% endblock %}

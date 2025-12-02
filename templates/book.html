@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .modern-booking { max-width: 1000px; margin: 1.5rem auto; }
+    .summary-card { background: #f8fafc; border-radius: 12px; }
+    .field-label { font-weight:600; font-size:0.92rem }
+    .small-muted { font-size:0.85rem; color:#6c757d }
+</style>
+
+<div class="modern-booking">
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm animate-slide-left">
+                <div class="card-body">
+                    <h4 class="mb-3"><i class="bi bi-ship"></i> Book a Ferry</h4>
+
+                    <form id="booking-form" method="POST" action="{{ url_for('book') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-outline-primary flex-fill trip-btn active" data-trip="oneway">One-way</button>
+                            <button type="button" class="btn btn-outline-primary flex-fill trip-btn" data-trip="round">Round-trip</button>
+                            <input type="hidden" name="trip_type" id="trip_type" value="oneway">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Departure</label>
+                                <select class="form-select" id="departure" name="departure" required>
+                                    <option value="">Choose</option>
+                                    {% for port in ports %}
+                                    <option value="{{ port }}" {% if initial and initial.get('departure') == port %}selected{% endif %}>{{ port }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Destination</label>
+                                <select class="form-select" id="destination" name="destination" required>
+                                    <option value="">Choose</option>
+                                    {% for port in ports %}
+                                    <option value="{{ port }}" {% if initial and initial.get('destination') == port %}selected{% endif %}>{{ port }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Travel Date</label>
+                                <input type="date" id="date" name="date" class="form-control" value="{{ initial.get('date','') if initial else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Time</label>
+                                <select id="time" name="time" class="form-select" required>
+                                    <option value="">Select time</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="return-section" style="display:none;" class="mt-2">
+                            <hr>
+                            <h6 class="mb-2">Return Trip</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="field-label">Return Date</label>
+                                    <input type="date" id="return_date" name="return_date" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="field-label">Return Time</label>
+                                    <select id="return_time" name="return_time" class="form-select">
+                                        <option value="">Select return time</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2 align-items-end">
+                            <div class="col-md-4 mb-3">
+                                <label class="field-label">Seats</label>
+                                <input type="number" id="seats" name="seats" class="form-control" min="1" max="10" value="{{ initial.get('seats','') if initial else '' }}" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="field-label">Available</label>
+                                <input type="text" id="available_seats" class="form-control" readonly>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="field-label">Price / seat</label>
+                                <input type="text" id="price-per-seat-input" class="form-control" readonly>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Full name</label>
+                                <input type="text" class="form-control" name="name" value="{{ initial.get('name', '') if initial else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="field-label">Email</label>
+                                <input type="email" class="form-control" name="email" value="{{ initial.get('email', '') if initial else '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="field-label">Phone</label>
+                            <input type="tel" class="form-control" name="phone" value="{{ initial.get('phone', '') if initial else '' }}" required>
+                        </div>
+
+
+
+
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="small-muted">Price per seat: <strong id="price-per-seat">0</strong> MVR</div>
+                            <div class="h5 mb-0">Total: <strong id="total-price">0</strong> MVR</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">Continue to Seat Selection</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card summary-card p-3 shadow-sm animate-slide-right animate-delay-2">
+                <h6 class="mb-3">Booking Summary</h6>
+                <ul class="list-unstyled small-muted">
+                    <li><strong>Route:</strong> <span id="summary-route">—</span></li>
+                    <li><strong>Date:</strong> <span id="summary-date">—</span></li>
+                    <li><strong>Time:</strong> <span id="summary-time">—</span></li>
+                    <li><strong>Seats:</strong> <span id="summary-seats">—</span></li>
+                    <li id="summary-return-row" style="display:none;"><strong>Return:</strong> <span id="summary-return-date">—</span> at <span id="summary-return-time">—</span></li>
+                </ul>
+                <hr>
+                <p class="small-muted">Need help? Contact support at <a href="mailto:support@oceanlineferry.com">support@oceanlineferry.com</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function(){
+    // preserve existing hooks and behavior
+    $('.trip-btn').on('click', function(){
+        $('.trip-btn').removeClass('active');
+        $(this).addClass('active');
+        const trip = $(this).data('trip');
+        $('#trip_type').val(trip);
+        if (trip === 'round') { $('#return-section').slideDown(); } else { $('#return-section').slideUp(); }
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    $('#date, #return_date').attr('min', today);
+
+    function updateTotal() {
+        const price = parseFloat($('#price-per-seat').text()) || 0;
+        const seats = parseInt($('#seats').val()) || 0;
+        const tripType = $('#trip_type').val();
+        let total = price * seats;
+        if(tripType === 'round') {
+            // Assume symmetric pricing; double the outbound fare.
+            // (Server will recalc precisely including reversed route if different.)
+            total = total * 2;
+        }
+        $('#total-price').text(total);
+        $('#summary-seats').text(seats || '—');
+    }
+
+    $('#departure, #destination').on('change', function(){
+        const dep = $('#departure').val();
+        const dest = $('#destination').val();
+        if (dep && dest) {
+            $.post('/get_price', { departure: dep, destination: dest, csrf_token: '{{ csrf_token() }}' }, function(data){
+                if (data.price) {
+                    $('#price-per-seat').text(data.price);
+                    $('#price-per-seat-input').val(data.price);
+                    $('#price-per-seat').text(data.price);
+                    updateTotal();
+                }
+            });
+        }
+        $('#date').val(''); $('#time').empty().append('<option value="">Select time</option>'); $('#available_seats').val('');
+        $('#summary-route').text((dep && dest) ? (dep + ' → ' + dest) : '—');
+    });
+
+    $('#date').on('change', function(){
+        const dep = $('#departure').val(); const dest = $('#destination').val(); const date = $(this).val();
+        if(dep && dest && date){ loadAvailableTimes('#time', dep, dest, date); }
+        $('#summary-date').text(date || '—');
+    });
+
+    $('#time').on('change', function(){
+        const dep = $('#departure').val(); const dest = $('#destination').val(); const date = $('#date').val(); const time = $(this).val();
+        if(dep && dest && date && time){
+            $.post('/get_available_seats', { departure: dep, destination: dest, date: date, time: time, csrf_token: '{{ csrf_token() }}' }, function(data){
+                $('#available_seats').val(data.available);
+            });
+        }
+        $('#summary-time').text($(this).val() || '—');
+        updateTotal();
+    });
+
+    $('#return_date').on('change', function(){
+        const dep = $('#destination').val(); const dest = $('#departure').val(); const date = $(this).val();
+        if(dep && dest && date){ loadAvailableTimes('#return_time', dep, dest, date); }
+        if(date){
+            $('#summary-return-date').text(date);
+            $('#summary-return-row').show();
+        }
+    });
+
+    $('#return_time').on('change', function(){
+        const t = $(this).val();
+        if(t){
+            $('#summary-return-time').text(t);
+            $('#summary-return-row').show();
+        }
+        updateTotal();
+    });
+
+    function loadAvailableTimes(element, dep, dest, date){
+        if(dep && dest && date){
+            $.post('/get_times', { departure: dep, destination: dest, date: date, csrf_token: '{{ csrf_token() }}' }, function(times){
+                $(element).empty().append('<option value="">Select time</option>');
+                if (Array.isArray(times)) { times.forEach(t => $(element).append(`<option value="${t}">${t}</option>`)); }
+                else if (times && times.times) { times.times.forEach(t => $(element).append(`<option value="${t}">${t}</option>`)); }
+            }).fail(function(){ $(element).empty().append('<option value="">(failed to load)</option>'); });
+        }
+    }
+
+    // Prefill from server-provided initial or URL
+    const initial = {
+        departure: '{{ initial.get('departure','') if initial else '' }}',
+        destination: '{{ initial.get('destination','') if initial else '' }}',
+        date: '{{ initial.get('date','') if initial else '' }}',
+        time: '{{ initial.get('time','') if initial else '' }}',
+        seats: '{{ initial.get('seats','') if initial else '' }}'
+    };
+    if(initial.departure) $('#departure').val(initial.departure).trigger('change');
+    if(initial.destination) $('#destination').val(initial.destination).trigger('change');
+    if(initial.date){ $('#date').val(initial.date).trigger('change'); setTimeout(()=>{ if(initial.departure && initial.destination) loadAvailableTimes('#time', initial.departure, initial.destination, initial.date); },150); }
+    if(initial.time) setTimeout(()=>$('#time').val(initial.time).trigger('change'),400);
+    if(initial.seats) { $('#seats').val(initial.seats); updateTotal(); }
+
+    try{ const params = new URLSearchParams(window.location.search); const qDep = params.get('departure'); const qDest = params.get('destination'); const qDate = params.get('date'); const qTime = params.get('time'); const qSeats = params.get('seats'); if(qDep) $('#departure').val(qDep).trigger('change'); if(qDest) $('#destination').val(qDest).trigger('change'); if(qDate) setTimeout(()=>$('#date').val(qDate).trigger('change'),150); if(qTime) setTimeout(()=>$('#time').val(qTime).trigger('change'),500); if(qSeats) { $('#seats').val(qSeats); updateTotal(); } }catch(e){}
+
+    // Form will submit normally to create booking and proceed to seat selection
+
+    $('#seats').on('input', updateTotal);
+});
+</script>
+{% endblock %}

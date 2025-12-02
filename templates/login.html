@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Login - OceanLine{% endblock %}
+
+{% block content %}
+<style>
+    .auth-container { max-width: 450px; margin: 3rem auto; }
+    .auth-card { border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.1); border-radius: 12px; }
+    .auth-header { background: linear-gradient(90deg, #0A64C4, #0457A0); color: white; padding: 24px; border-radius: 12px 12px 0 0; text-align: center; }
+    .form-label { font-weight: 600; font-size: 0.9rem; color: #333; }
+    .btn-login { background: linear-gradient(90deg, #0A64C4, #0457A0); border: none; }
+    .btn-login:hover { opacity: 0.9; }
+</style>
+
+<div class="auth-container">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <h4 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Welcome Back</h4>
+            <p class="mb-0 mt-2" style="opacity: 0.9; font-size: 0.9rem;">Sign in to your account</p>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email" required autofocus>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                    <label class="form-check-label" for="remember">Remember me</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login w-100 py-2 mb-3">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                </button>
+
+                <div class="text-center">
+                    <small class="text-muted">Don't have an account? 
+                        <a href="{{ url_for('register') }}" class="text-decoration-none">Create one here</a>
+                    </small>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

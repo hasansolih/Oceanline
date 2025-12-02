@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Ferry Booking Confirmation - OceanLine{% endblock %}
+
+{% block content %}
+<style>
+    .confirm-card { border: none; }
+    .confirm-header { background: linear-gradient(90deg,#0A64C4,#0457A0); color: #fff; padding: 28px; border-radius: 12px 12px 0 0; }
+    .confirm-title { font-size: 22px; font-weight:700; margin:0; }
+    .confirm-sub { opacity:0.9; margin-top:6px; }
+    .ref-box { background: #fff; color:#0A64C4; display:inline-block; padding:10px 18px; border-radius:8px; font-weight:700; margin-top:14px; }
+    .section { padding:18px; }
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+    .info-box { background:#fff; border-radius:8px; padding:14px; box-shadow:0 1px 6px rgba(0,0,0,0.04); }
+    .info-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f4fb; }
+    .info-label { color:#556; font-weight:600; }
+    .seat-badge { display:inline-block; background:#e8f1ff; color:#0A64C4; padding:4px 8px; border-radius:4px; margin:2px; font-weight:700; }
+    .receipt { background:#f8f9fb; padding:12px; border-radius:8px; }
+    .footer-note { text-align:center; color:#666; font-size:0.95rem; margin-top:14px; }
+</style>
+
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card confirm-card">
+        <div class="confirm-header text-center">
+          <div class="confirm-title">Ferry Booking Confirmation</div>
+          <div class="confirm-sub">OceanLine Ferry Service</div>
+          <div class="ref-box">Reference: {{ booking.booking_reference }}</div>
+        </div>
+
+        <div class="section">
+          <div class="grid-2">
+            <div class="info-box">
+              <h5 class="mb-3">Journey Details</h5>
+              <div class="info-row"><div class="info-label">Route</div><div>{{ booking.departure }} → {{ booking.destination }}</div></div>
+              <div class="info-row"><div class="info-label">Date</div><div>{{ booking.date.strftime('%A, %B %d, %Y') }}</div></div>
+              <div class="info-row"><div class="info-label">Departure Time</div><div>{{ booking.time }}</div></div>
+              <div class="info-row"><div class="info-label">Passengers</div><div>{{ booking.seats }}</div></div>
+              <div class="info-row"><div class="info-label">Selected Seats</div><div>{% if booking.selected_seats %}{% for s in booking.selected_seats.split(',') %}<span class="seat-badge">{{ s.strip() }}</span>{% endfor %}{% else %}—{% endif %}</div></div>
+              {% if booking.is_roundtrip %}
+              <div class="info-row"><div class="info-label">Outbound Fare</div><div>MVR {% if outbound_price %}{{ outbound_price * booking.seats }}{% else %}—{% endif %}</div></div>
+              <div class="info-row"><div class="info-label">Return Fare</div><div>MVR {% if return_price %}{{ return_price * booking.seats }}{% else %}—{% endif %}</div></div>
+              <div class="info-row" style="border-bottom:0;"><div class="info-label">Total (Round Trip)</div><div><strong>MVR {{ booking.total_price }}</strong></div></div>
+              {% else %}
+              <div class="info-row" style="border-bottom:0;"><div class="info-label">Total</div><div><strong>MVR {{ booking.total_price }}</strong></div></div>
+              {% endif %}
+            </div>
+
+            <div class="info-box">
+              <h5 class="mb-3">Passenger Information</h5>
+              <div class="info-row"><div class="info-label">Name</div><div>{{ booking.name }}</div></div>
+              <div class="info-row"><div class="info-label">Email</div><div>{{ booking.email }}</div></div>
+              <div class="info-row"><div class="info-label">Phone</div><div>{{ booking.phone }}</div></div>
+              <div class="info-row"><div class="info-label">Payment Method</div><div>{{ booking.payment_method if booking.payment_method else '—' }}</div></div>
+              {% if booking.is_roundtrip %}
+              <hr>
+              <h6 class="mb-2">Return Trip</h6>
+              <div class="info-row"><div class="info-label">Route</div><div>{{ booking.destination }} → {{ booking.departure }}</div></div>
+              <div class="info-row"><div class="info-label">Date</div><div>{% if booking.return_date %}{{ booking.return_date.strftime('%A, %B %d, %Y') }}{% else %}—{% endif %}</div></div>
+              <div class="info-row"><div class="info-label">Time</div><div>{% if booking.return_time %}{{ booking.return_time }}{% else %}—{% endif %}</div></div>
+              <div class="info-row" style="border-bottom:0;"><div class="info-label">Return Seats</div><div>{% if booking.return_selected_seats %}{% for s in booking.return_selected_seats.split(',') %}<span class="seat-badge">{{ s.strip() }}</span>{% endfor %}{% else %}—{% endif %}</div></div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="receipt d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Receipt:</strong> Download your booking receipt for records.
+              </div>
+              <div>
+                <form method="POST" action="{{ url_for('pay') }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="booking_ref" value="{{ booking.booking_reference }}">
+                  <input type="hidden" name="payment_method" value="Confirmed Booking">
+                  <button type="submit" class="btn btn-success"><i class="bi bi-download"></i> Download Receipt</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary me-2">Book Another Ferry</a>
+            <a href="{{ url_for('bookings') }}" class="btn btn-outline-primary">View My Bookings</a>
+          </div>
+
+          <div class="footer-note">
+            <p class="mb-1"><strong>Important:</strong> Please arrive at the ferry terminal at least 30 minutes before departure.</p>
+            <p class="mb-1">For any queries, contact us at <a href="mailto:support@oceanlineferry.com">support@oceanlineferry.com</a></p>
+            <p class="mb-0">Thank you for choosing OceanLine Ferry Service!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

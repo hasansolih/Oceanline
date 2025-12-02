@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .stat-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        margin-bottom: 15px;
+    }
+    .bg-primary-light { background-color: rgba(0, 123, 255, 0.1); color: #007bff; }
+    .bg-success-light { background-color: rgba(40, 167, 69, 0.1); color: #28a745; }
+    .bg-warning-light { background-color: rgba(255, 193, 7, 0.1); color: #ffc107; }
+    .bg-info-light { background-color: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4"><i class="bi bi-speedometer2"></i> Admin Dashboard</h3>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary-light">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+                    <h4>{{ total_bookings }}</h4>
+                    <p class="text-muted mb-0">Total Bookings</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success-light">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <h4>{{ upcoming }}</h4>
+                    <p class="text-muted mb-0">Upcoming Trips</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info-light">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <h4>{{ total_schedules }}</h4>
+                    <p class="text-muted mb-0">Active Schedules</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-warning-light">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <h4>{{ "%.2f"|format(daily_revenue) }} MVR</h4>
+                    <p class="text-muted mb-0">Today's Revenue</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Revenue Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-success-light">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h4>{{ "%.2f"|format(monthly_revenue) }} MVR</h4>
+                    <p class="text-muted mb-0">Monthly Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-info-light">
+                        <i class="bi bi-piggy-bank"></i>
+                    </div>
+                    <h4>{{ "%.2f"|format(total_revenue) }} MVR</h4>
+                    <p class="text-muted mb-0">Total Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <div class="stat-icon bg-primary-light">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h4>{{ "%.2f"|format(total_revenue / total_bookings if total_bookings > 0 else 0) }} MVR</h4>
+                    <p class="text-muted mb-0">Avg Booking Value</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning-charge"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin_bookings') }}" class="btn btn-primary w-100">
+                                <i class="bi bi-ticket-perforated"></i> View Bookings
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin_schedules') }}" class="btn btn-success w-100">
+                                <i class="bi bi-clock"></i> Manage Schedules
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin_reports') }}" class="btn btn-info w-100">
+                                <i class="bi bi-graph-up"></i> Reports
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('admin_settings') }}" class="btn btn-warning w-100">
+                                <i class="bi bi-gear"></i> Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-activity"></i> Recent Bookings</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Recent bookings will appear here...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> System Info</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Database:</strong> Connected</p>
+                    <p><strong>Server:</strong> Running</p>
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Uptime:</strong> 24h</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

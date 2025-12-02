@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-4"><i class="bi bi-cash-stack"></i> Pending Payments ({{ bookings|length }})</h3>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if bookings %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Passenger</th>
+                        <th>Route</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Info / Slip</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    <tr>
+                        <td><strong>{{ b.booking_reference }}</strong></td>
+                        <td>{{ b.name }}<br><small class="text-muted">{{ b.email }}</small></td>
+                        <td>{{ b.departure }} → {{ b.destination }}</td>
+                        <td><strong>{{ b.total_price }} MVR</strong></td>
+                        <td>{{ b.payment_method or 'N/A' }}</td>
+                        <td>
+                            {% if b.payment_info %}
+                                {% if b.payment_info.startswith('card:') %}
+                                    <small class="text-muted">{{ b.payment_info }}</small>
+                                {% else %}
+                                    <a href="{{ url_for('uploaded_file', filename=b.payment_info) }}" target="_blank">View Slip</a>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">No info</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-info" href="{{ url_for('confirmation', ref=b.booking_reference) }}"><i class="bi bi-eye"></i> View</a>
+
+                            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('create_checkout_session', ref=b.booking_reference) }}"><i class="bi bi-credit-card"></i> Checkout</a>
+
+                            <form method="POST" action="{{ url_for('admin_confirm_payment', id=b.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-sm btn-success" onclick="return confirm('Mark payment as received and confirm this booking?')"><i class="bi bi-check2-circle"></i> Confirm</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-wallet2" style="font-size:3em;color:#ccc"></i>
+            <h5 class="mt-3">No pending payments</h5>
+            <p class="text-muted">All bookings are up to date.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

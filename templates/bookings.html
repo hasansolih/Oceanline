@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-4">My Bookings</h3>
+
+        {% if bookings %}
+        <div class="table-responsive">
+            <table class="table align-middle table-hover shadow-sm rounded">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Reference</th>
+                        <th>Name</th>
+                        <th>Route</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Seats</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                    <tr>
+                        <td><strong>{{ booking.booking_reference }}</strong></td>
+                        <td>{{ booking.name }}</td>
+                        <td>{{ booking.departure }} → {{ booking.destination }}</td>
+                        <td>{{ booking.date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ booking.time }}</td>
+                        <td>{{ booking.seats }}</td>
+                        <td>{{ booking.total_price }} MVR</td>
+                        <td>
+                            <span class="badge bg-success">Confirmed</span>
+                        </td>
+                                <td>
+                                     <a href="{{ url_for('confirmation', ref=booking.booking_reference) }}" 
+                                         class="btn btn-sm btn-info me-2" title="View Booking">
+                                         View
+                                     </a>
+                                     <a href="{{ url_for('cancel', id=booking.id) }}" 
+                                         class="btn btn-sm btn-danger" 
+                                         onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                         Cancel
+                                     </a>
+                                </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            No bookings found.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    table.table-hover tbody tr:hover {
+        background-color: rgba(0,123,255,0.1);
+    }
+    table th, table td {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

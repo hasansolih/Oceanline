@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .settings-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 12px 12px 0 0;
+    }
+    .stat-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .danger-zone {
+        border: 2px solid #dc3545;
+        border-radius: 8px;
+        padding: 20px;
+        background: #fff5f5;
+    }
+</style>
+
+<div class="container-fluid animate-fade-in">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3><i class="bi bi-gear"></i> System Settings</h3>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h5>{{ total_bookings }}</h5>
+                <small class="text-muted">Total Bookings</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h5>{{ total_users }}</h5>
+                <small class="text-muted">Registered Users</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h5>{{ total_schedules }}</h5>
+                <small class="text-muted">Active Schedules</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-box">
+                <h5>{{ db_size }}</h5>
+                <small class="text-muted">Database Size</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-6">
+            <!-- System Configuration -->
+            <div class="card settings-card">
+                <div class="settings-header">
+                    <h5 class="mb-0"><i class="bi bi-sliders"></i> System Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="update_capacity">
+                        <div class="mb-3">
+                            <label class="form-label">Ferry Capacity (Seats)</label>
+                            <input type="number" name="ferry_capacity" class="form-control" 
+                                   value="{{ ferry_capacity }}" min="1" max="100" required>
+                            <small class="text-muted">Current capacity: {{ ferry_capacity }} seats</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Update Capacity
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Pricing Management -->
+            <div class="card settings-card">
+                <div class="settings-header">
+                    <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Pricing Management</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="update_price">
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">From</label>
+                                <select name="price_departure" class="form-select" required>
+                                    <option value="">Select</option>
+                                    {% for port in ports %}
+                                    <option value="{{ port }}">{{ port }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">To</label>
+                                <select name="price_destination" class="form-select" required>
+                                    <option value="">Select</option>
+                                    {% for port in ports %}
+                                    <option value="{{ port }}">{{ port }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Price (MVR)</label>
+                                <input type="number" name="new_price" class="form-control" 
+                                       min="1" step="0.01" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-cash"></i> Update Price
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <!-- Current Prices -->
+                    <h6 class="mt-3">Current Route Prices</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-striped">
+                            <thead class="sticky-top bg-white">
+                                <tr>
+                                    <th>Route</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route, price in route_prices.items() %}
+                                <tr>
+                                    <td>{{ route[0] }} → {{ route[1] }}</td>
+                                    <td><strong>{{ price }} MVR</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-6">
+            <!-- Admin Account Management -->
+            <div class="card settings-card">
+                <div class="settings-header">
+                    <h5 class="mb-0"><i class="bi bi-person-lock"></i> Admin Account</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="change_password">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" name="current_password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" name="new_password" class="form-control" 
+                                   minlength="6" required>
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" name="confirm_password" class="form-control" 
+                                   minlength="6" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-key"></i> Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Database Backup & Maintenance -->
+            <div class="card settings-card">
+                <div class="settings-header">
+                    <h5 class="mb-0"><i class="bi bi-database"></i> Database Management</h5>
+                </div>
+                <div class="card-body">
+                    <h6><i class="bi bi-download"></i> Export Data</h6>
+                    <p class="text-muted small">Download all bookings as CSV file</p>
+                    <form method="POST" class="mb-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="export_bookings">
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Bookings
+                        </button>
+                    </form>
+
+                    <hr>
+
+                    <div class="danger-zone">
+                        <h6 class="text-danger"><i class="bi bi-exclamation-triangle"></i> Danger Zone</h6>
+                        <p class="small mb-3">Clear old bookings from the database. This action cannot be undone!</p>
+                        
+                        <form method="POST" onsubmit="return confirm('Are you sure you want to delete old bookings? This cannot be undone!');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="action" value="clear_old_bookings">
+                            <div class="input-group mb-3">
+                                <input type="number" name="days_old" class="form-control" 
+                                       placeholder="Days" min="30" value="90" required>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Delete Old Bookings
+                                </button>
+                            </div>
+                            <small class="text-muted">Delete bookings older than specified days (minimum 30)</small>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card settings-card">
+                <div class="card-body">
+                    <h6><i class="bi bi-info-circle"></i> Important Notes</h6>
+                    <ul class="small text-muted mb-0">
+                        <li>Ferry capacity changes require a server restart to take full effect</li>
+                        <li>Price changes are applied immediately but only stored in memory</li>
+                        <li>Password changes should be updated in your <code>.env</code> file for persistence</li>
+                        <li>Always backup your database before performing maintenance operations</li>
+                        <li>Exported CSV files can be opened in Excel or any spreadsheet application</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
